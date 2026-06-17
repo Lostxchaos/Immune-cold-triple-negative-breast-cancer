@@ -1,0 +1,63 @@
+# Conda environment for Stage 2 (Cell2Location deconvolution) and
+# Stage 7 (MYC transcription-factor activity inference).
+#
+# This environment ("tnbc_spatial") carries the Bayesian deconvolution stack
+# (cell2location / scvi-tools / jax / pyro) and decoupleR, which require
+# numpy < 2 and scanpy 1.9.x and are therefore kept separate from the main
+# analysis environment (see environment_main.yml). Python 3.10.18, linux-64.
+#
+# torch is pinned to a CUDA 11.8 build (GPU used for deconvolution). On a
+# machine without an NVIDIA GPU, install the CPU build of torch instead.
+
+name: tnbc_spatial
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10.18
+  - pip
+  - setuptools
+  - wheel
+  - pip:
+      # --- deconvolution (Stage 2) ---
+      - cell2location==0.1.5
+      - scvi-tools==1.1.2
+      - scanpy==1.9.8
+      - anndata==0.10.8
+      - squidpy==1.2.3
+      # --- MYC TF activity (Stage 7) ---
+      - decoupler==2.1.4
+      - omnipath==1.0.12
+      # --- Bayesian / probabilistic backend (required by cell2location) ---
+      - jax==0.4.23
+      - jaxlib==0.4.23
+      - numpyro==0.13.2
+      - pyro-ppl==1.9.1
+      - pyro-api==0.1.2
+      - flax==0.8.0
+      - optax==0.1.9
+      - lightning==2.1.4
+      - pytorch-lightning==2.6.0
+      - torchmetrics==1.8.2
+      # --- core scientific stack (pinned low for cell2location compatibility) ---
+      - numpy==1.23.5
+      - pandas==2.0.3
+      - scipy==1.10.1
+      - scikit-learn==1.7.2
+      - statsmodels==0.14.0
+      - numba==0.56.4
+      - llvmlite==0.39.1
+      - matplotlib==3.10.8
+      - seaborn==0.13.2
+      - h5py==3.14.0
+      - tables==3.7.0
+      - leidenalg==0.10.2
+      - louvain==0.8.2
+      - harmonypy==0.0.10
+      - umap-learn==0.5.9.post2
+      - mudata==0.3.2
+      - zarr==2.14.2
+      # --- deep-learning backend (GPU build; CUDA 11.8) ---
+      - torch==2.6.0+cu118
+      - torchvision==0.21.0+cu118
+      - torchaudio==2.6.0+cu118

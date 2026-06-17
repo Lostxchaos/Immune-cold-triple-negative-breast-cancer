@@ -1,0 +1,71 @@
+# Conda environment for the spatial-TNBC analysis pipeline.
+#
+# This file documents the environment ("spatial_tnbc_a") in which the
+# classification, CAF-barrier, robustness, checkpoint, MYC-inference, bulk and
+# figure stages were run (Python 3.10.18, linux-64, HPC).
+#
+# Stage 2 (Cell2Location deconvolution) and Stage 7 (MYC transcription-factor
+# activity) were run in a SEPARATE environment (see environment_deconv_myc.yml),
+# because cell2location/scvi-tools require numpy < 2 and scanpy 1.9.x, which are
+# incompatible with the versions used here. This file covers all other stages:
+# classification, CAF barrier, robustness, checkpoint landscape, bulk and figures.
+#
+# Platform note: package builds below are linux-64. To recreate on a different
+# OS, use:  conda env create -f environment.yml   (conda will resolve builds),
+# or install the key dependencies listed in the README from the pip section.
+# torch is pinned to a CUDA 12.1 build; on a machine without an NVIDIA GPU,
+# install the CPU build instead (pip install torch==2.5.1).
+
+name: spatial_tnbc_a
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10.18
+  # --- core scientific stack (conda-forge) ---
+  - numpy=2.2.6
+  - pandas=2.3.3
+  - scipy=1.15.2
+  - scikit-learn=1.7.2
+  - statsmodels=0.14.5
+  - matplotlib=3.10.7
+  - matplotlib-base=3.10.7
+  - seaborn=0.13.2
+  - h5py=3.15.1
+  - hdf5=1.14.6
+  - joblib=1.5.2
+  - tqdm=4.67.1
+  - python-igraph=0.11.9
+  - igraph=0.10.16
+  - pip=25.2
+  - setuptools
+  - wheel
+  - pip:
+      # --- single-cell / spatial ---
+      - scanpy==1.11.4
+      - anndata==0.11.4
+      - squidpy==1.6.5
+      - spatialdata==0.5.0
+      - leidenalg==0.10.2
+      - harmonypy==0.0.10
+      - umap-learn==0.5.9.post2
+      - pynndescent==0.5.13
+      - numba==0.62.1
+      - llvmlite==0.45.1
+      # --- survival ---
+      - lifelines==0.30.0
+      - autograd==1.8.0
+      - autograd-gamma==0.5.0
+      - formulaic==1.2.1
+      # --- imaging / IO used by the spatial stack ---
+      - scikit-image==0.25.2
+      - tifffile==2025.5.10
+      - imageio==2.37.2
+      - zarr==2.18.3
+      - dask==2024.11.2
+      # --- plotting helpers ---
+      - adjusttext==1.3.0
+      - matplotlib-scalebar==0.9.0
+      # --- deep-learning backend (GPU build; see platform note above) ---
+      # On CPU-only machines replace with: torch==2.5.1
+      - torch==2.5.1+cu121
