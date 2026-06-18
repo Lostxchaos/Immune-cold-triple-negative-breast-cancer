@@ -1,3 +1,5 @@
+# Spatial decomposition of immune-cold TNBC: a CAF barrier and the limits of driver inference
+
 Analysis code for the manuscript *"A fibroblast barrier and the limits of driver inference in immune-cold triple-negative breast cancer."*
 
 This repository contains the computational pipeline used to (i) classify Visium spatial transcriptomics spots into microenvironment phenotypes, (ii) quantify a cancer-associated fibroblast (CAF) stromal barrier under controls against classifier circularity, (iii) test tumour-intrinsic MYC activity as a candidate driver of the Immune Desert niche under regulon-composition and tumour-fraction control, and (iv) assess recoverability of the phenotype signature in bulk cohorts.
@@ -137,58 +139,58 @@ The directory numbering follows the data flow: each stage consumes the AnnData o
 Stages 2 and 6-MYC run in the `tnbc\_spatial` environment; all other stages run in `spatial\_tnbc\_a` (see §2). Switch environments where indicated.
 
 ```bash
-# 0. Reference signature + per-spot deconvolution (run once; GPU recommended)
-#    >>> environment: tnbc\_spatial
-python src/02\_deconvolution/deconvolution.py
+# 0. Preprocessing and QC  ->  adata_preprocessed.h5ad (29,946 genes)
+#    >>> environment: spatial_tnbc_a  (and all stages below unless noted)
+python src/01_preprocessing/preprocessing.py
+python src/01_preprocessing/reclassify_validation.py
 
-# 1. Preprocessing and QC  ->  adata.raw (29,946 genes)
-#    >>> environment: spatial\_tnbc\_a  (and all stages below unless noted)
-python src/01\_preprocessing/preprocessing.py
-python src/01\_preprocessing/reclassify\_validation.py
+# 1. Cell2Location deconvolution (run once; GPU recommended; reads step 0 output)
+#    >>> environment: tnbc_spatial
+python src/02_deconvolution/deconvolution.py
 
 # 2. Phenotype classification (five niches)
-python src/03\_classification/phenotype\_classifier.py
+#    >>> environment: spatial_tnbc_a
+python src/03_classification/phenotype_classifier.py
 
 # 3. CAF barrier: seven convergent estimators
-python src/04\_caf\_barrier/mechanism\_validation.py
-python src/04\_caf\_barrier/mechanism\_validation\_additions.py
-python src/04\_caf\_barrier/patient\_level\_analysis.py
-python src/04\_caf\_barrier/marker\_gene\_scoring.py
-python src/04\_caf\_barrier/orthogonal\_validation.py
-python src/04\_caf\_barrier/spatial\_analysis\_v2.py
+python src/04_caf_barrier/mechanism_validation.py
+python src/04_caf_barrier/mechanism_validation_additions.py
+python src/04_caf_barrier/patient_level_analysis.py
+python src/04_caf_barrier/marker_gene_scoring.py
+python src/04_caf_barrier/orthogonal_validation.py
+python src/04_caf_barrier/spatial_analysis_v2.py
 
 # 4. Robustness
-python src/05\_robustness/sensitivity\_analysis.py
-python src/05\_robustness/sensitivity\_analysis\_additions.py
-python src/05\_robustness/robustness\_stress\_tests.py
-python src/05\_robustness/spatial\_coherence\_analysis.py
-python src/05\_robustness/comprehensive\_celltype\_analysis.py
-python src/05\_robustness/ambiguity\_tradeoff.py
+python src/05_robustness/sensitivity_analysis.py
+python src/05_robustness/sensitivity_analysis_additions.py
+python src/05_robustness/robustness_stress_tests.py
+python src/05_robustness/spatial_coherence_analysis.py
+python src/05_robustness/comprehensive_celltype_analysis.py
+python src/05_robustness/ambiguity_tradeoff.py
 
 # 5. Checkpoint landscape, chemotaxis, cross-cohort validation
-python src/06\_checkpoint\_chemokine/validation.py
-python src/06\_checkpoint\_chemokine/checkpoint\_landscape.py
+python src/06_checkpoint_chemokine/validation.py
+python src/06_checkpoint_chemokine/checkpoint_landscape.py
 
-# 6. MYC inference under confound control (see section 7 for the regulon note)
-#    >>> environment: tnbc\_spatial
-python src/07\_myc\_inference/fix\_myc\_tf\_clean\_regulon\_wrapper.py
-python src/07\_myc\_inference/fix\_myc\_tf\_proliferation\_confound.py
+# 6. MYC inference under confound control (see §7 for the regulon note)
+#    >>> environment: tnbc_spatial
+python src/07_myc_inference/fix_myc_tf_clean_regulon_wrapper.py
+python src/07_myc_inference/fix_myc_tf_proliferation_confound.py
 
 # 7. Bulk recoverability + survival
-#    >>> environment: spatial\_tnbc\_a
-python src/08\_bulk/bulk\_validation.py
+#    >>> environment: spatial_tnbc_a
+python src/08_bulk/bulk_validation.py
 
-# 8. Post-hoc corrections applied after the primary run (section 8)
-python src/fixes/fix\_validation\_celltype\_normalization.py
-python src/fixes/fix\_figs1\_qc.py
-python src/fixes/fix\_survival\_fdr.py
-python src/fixes/fix\_patient\_level\_validation.py
-python src/fixes/fix\_b1\_auc\_loocv.py
-python src/fixes/fix\_b2\_gene\_dropout\_correct.py
+# 8. Post-hoc corrections applied after the primary run (§8)
+python src/fixes/fix_validation_celltype_normalization.py
+python src/fixes/fix_survival_fdr.py
+python src/fixes/fix_patient_level_validation.py
+python src/fixes/fix_b1_auc_loocv.py
+python src/fixes/fix_b2_gene_dropout_correct.py
 
 # 9. Figures
-python figures/publication\_figures\_v10\_main.py
-python figures/publication\_figures\_v10\_supp.py
+python figures/publication_figures_v10_main.py
+python figures/publication_figures_v10_supp.py
 ```
 
 A fixed random seed is set in the stochastic procedures.
@@ -199,96 +201,105 @@ A fixed random seed is set in the stochastic procedures.
 
 ### Configuration and shared utilities (`src/config/`)
 
-|Module|Purpose|Manuscript link|
-|-|-|-|
-|`config.py`|Canonical definitions of all gene signatures (Tumour, Silencing, Immune, Barrier, MHC-I, ISG, chemokine), the phenotype colour palette and global thresholds.|Methods -> *Spatial phenotype classification*, *Gene-signature readouts*|
-|`config\_additions.py`|Additional shared constants used by later stages.|Methods|
-|`utils\_stats.py`|Cohen's *d* (pooled variance, ddof = 1), Benjamini-Hochberg FDR, Spearman helpers.|Methods -> *Statistics and reproducibility*|
+| Module | Purpose | Manuscript link |
+|---|---|---|
+| `config.py` | Canonical definitions of all gene signatures (Tumour, Silencing, Immune, Barrier, MHC-I, ISG, chemokine), the phenotype colour palette and global thresholds. | Methods → *Spatial phenotype classification*, *Gene-signature readouts* |
+| `config_additions.py` | Additional shared constants used by later stages (see §7). | Methods |
+| `utils_stats.py` | Cohen's *d* (pooled variance, ddof = 1), Benjamini-Hochberg FDR, Spearman helpers. | Methods → *Statistics and reproducibility* |
 
-### Stage 1 - Preprocessing (`src/01\_preprocessing/`)
+### Stage 0 — Preprocessing (`src/01_preprocessing/`)
 
-|Module|Purpose|Manuscript link|
-|-|-|-|
-|`preprocessing.py`|QC filtering (>=250 genes, >=800 UMIs, <20% mito, tissue mask), library-size normalisation to 10,000 UMIs, log1p; builds the 29,946-gene `adata.raw` used as the source for all gene-expression scores.|Methods -> *Spatial data preprocessing*|
-|`reclassify\_validation.py`|Applies the discovery-derived classifier thresholds to GSE213688 without recalculation, including proportion normalisation of Cell2Location abundances for the validation CAF contrast.|Methods; validation proportions|
+| Module | Purpose | Manuscript link |
+|---|---|---|
+| `preprocessing.py` | QC filtering (≥250 genes, ≥800 UMIs, <20% mito, tissue mask), library-size normalisation to 10,000 UMIs, log1p; builds the 29,946-gene `adata.raw` used as the source for all gene-expression scores. | Methods → *Spatial data preprocessing* |
+| `reclassify_validation.py` | Applies the discovery-derived classifier thresholds to GSE213688 without recalculation, including proportion normalisation of Cell2Location abundances for the validation CAF contrast. | Methods; validation proportions |
 
-### Stage 2 - Deconvolution (`src/02\_deconvolution/`)
+### Stage 1 — Deconvolution (`src/02_deconvolution/`)
 
-|Module|Purpose|Manuscript link|
-|-|-|-|
-|`deconvolution.py`|Learns the Cell2Location reference from GSE176078 (15 cell types) and estimates per-spot abundances (q05). Output is used as an orthogonal layer, not as an input to classification.|Methods -> *Cell-type deconvolution*; C2L panels|
+| Module | Purpose | Manuscript link |
+|---|---|---|
+| `deconvolution.py` | Learns the Cell2Location reference from GSE176078 (15 cell types) and estimates per-spot abundances (q05). Reads `adata_preprocessed.h5ad` produced by Stage 0. Output is used as an orthogonal layer, not as an input to classification. | Methods → *Cell-type deconvolution*; C2L panels |
 
-### Stage 3 - Classification (`src/03\_classification/`)
+### Stage 2 — Classification (`src/03_classification/`)
 
-|Module|Purpose|Manuscript link|
-|-|-|-|
-|`phenotype\_classifier.py`|Hierarchical rule assigning each spot to one of five phenotypes via Tumour/Immune gating and `Mechanism\_Diff = Silencing - Barrier`. Produces the phenotype proportions.|Methods; Results section 1|
+| Module | Purpose | Manuscript link |
+|---|---|---|
+| `phenotype_classifier.py` | Hierarchical rule assigning each spot to one of five phenotypes via Tumour/Immune gating and `Mechanism_Diff = Silencing − Barrier`. Produces the phenotype proportions. | Methods; Results section 1 |
 
-### Stage 4 - CAF barrier (`src/04\_caf\_barrier/`)
+### Stage 3 — CAF barrier (`src/04_caf_barrier/`)
 
-|Module|Purpose|Manuscript link|
-|-|-|-|
-|`mechanism\_validation.py` + `mechanism\_validation\_additions.py`|Spot-level CAF contrast (Excluded vs Desert) and related per-niche comparisons.|spot-level estimator|
-|`patient\_level\_analysis.py`|Section-level aggregation (per-section medians) to limit pseudoreplication.|section-level estimator|
-|`marker\_gene\_scoring.py`|CAF marker-gene score from raw expression, independent of Cell2Location - anti-circularity control.|control|
-|`orthogonal\_validation.py`|K-means on the abundance matrix and spatial-context classification - two further anti-circularity controls.|controls|
-|`spatial\_analysis\_v2.py`|CAF abundance gradient across niches and representative spatial maps.|Figures|
+| Module | Purpose | Manuscript link |
+|---|---|---|
+| `mechanism_validation.py` + `mechanism_validation_additions.py` | Spot-level CAF contrast (Excluded vs Desert) and related per-niche comparisons. | spot-level estimator |
+| `patient_level_analysis.py` | Section-level aggregation (per-section medians) to limit pseudoreplication. | section-level estimator |
+| `marker_gene_scoring.py` | CAF marker-gene score from raw expression, independent of Cell2Location — anti-circularity control. | control |
+| `orthogonal_validation.py` | K-means on the abundance matrix and spatial-context classification — two further anti-circularity controls. | controls |
+| `spatial_analysis_v2.py` | CAF abundance gradient across niches and representative spatial maps. | Figures |
 
-### Stage 5 - Robustness (`src/05\_robustness/`)
+### Stage 4 — Robustness (`src/05_robustness/`)
 
-|Module|Purpose|Manuscript link|
-|-|-|-|
-|`sensitivity\_analysis.py` + `sensitivity\_analysis\_additions.py`|Parameter sweep over the classification-threshold grid.|Supplementary Figures|
-|`robustness\_stress\_tests.py`|Label-shuffling permutation and gene-dropout simulation.|Supplementary Figures|
-|`spatial\_coherence\_analysis.py`|Per-section Moran's I of phenotype labels.|Supplementary Figures|
-|`comprehensive\_celltype\_analysis.py`|Effect sizes across all 15 deconvolved cell types (CAF specificity).|Supplementary Figures|
-|`ambiguity\_tradeoff.py`|Sensitivity of the Ambiguous Cold boundary.|Methods (robustness)|
+| Module | Purpose | Manuscript link |
+|---|---|---|
+| `sensitivity_analysis.py` + `sensitivity_analysis_additions.py` | Parameter sweep over the classification-threshold grid. | Supplementary Figures |
+| `robustness_stress_tests.py` | Label-shuffling permutation and gene-dropout simulation. | Supplementary Figures |
+| `spatial_coherence_analysis.py` | Per-section Moran's I of phenotype labels. | Supplementary Figures |
+| `comprehensive_celltype_analysis.py` | Effect sizes across all 15 deconvolved cell types (CAF specificity). | Supplementary Figures |
+| `ambiguity_tradeoff.py` | Sensitivity of the Ambiguous Cold boundary. | Methods (robustness) |
 
-### Stage 6 - Checkpoint, chemokine, cross-cohort (`src/06\_checkpoint\_chemokine/`)
+### Stage 5 — Checkpoint landscape and chemotaxis (`src/06_checkpoint_chemokine/`)
 
-|Module|Purpose|Manuscript link|
-|-|-|-|
-|`validation.py`|Consolidated cross-dataset validation and chemokine-immune-cell Spearman correlations.|chemotaxis; cross-cohort replication|
-|`checkpoint\_landscape.py`|Seventeen-gene immune co-regulatory landscape across phenotypes (Mann-Whitney + BH-FDR), with Inflamed as reference.|Revision of 14/17 genes; Results section 5|
+| Module | Purpose | Manuscript link |
+|---|---|---|
+| `validation.py` | Consolidated cross-dataset validation and chemokine–immune-cell Spearman correlations. | chemotaxis; cross-cohort replication |
+| `checkpoint_landscape.py` | Seventeen-gene immune co-regulatory landscape across phenotypes (Mann-Whitney + BH-FDR), with Inflamed as reference. | Results section 5 |
 
-### Stage 7 - MYC inference (`src/07\_myc\_inference/`)
+### Stage 6 — MYC inference (`src/07_myc_inference/`)
 
-The repository includes both the initial regulon-based exploration and the composition-controlled analysis reported in the paper, so the full reasoning is transparent. **To reproduce the reported MYC result, run the `fix\_myc\_tf\_clean\_\*` scripts** (step 6 of section 5).
+The repository includes both the initial regulon-based exploration and the composition-controlled analysis reported in the paper, so the full reasoning is transparent. **To reproduce the reported MYC result, run the `fix_myc_tf_clean_*` scripts** (step 6 of §5).
 
-|Module|Purpose|Manuscript link|
-|-|-|-|
-|`myc\_tf\_activity\_decoupler.py`|Base ULM transcription-factor-activity routine (decoupleR-style) over a CollecTRI-derived MYC regulon. Intended to be driven by the clean-regulon wrapper rather than run directly.|provides the activity routine for Fig. 7|
-|`fix\_myc\_tf\_clean\_regulon.py`|Restricts the MYC regulon to proliferation/metabolism targets disjoint from the functional readout gene sets (ISG, MHC-I, STING), removing the readout-gene overlap.|Figure|
-|`fix\_myc\_tf\_clean\_regulon\_wrapper.py`|Executable wrapper that runs the activity routine with the restricted regulon and writes the `\_clean` outputs. Entry point for the reported analysis.|runs the Fig. 7 analysis|
-|`fix\_myc\_tf\_proliferation\_confound.py`|Relates the cleaned MYC activity score to deconvolved tumour-cell abundance within Desert spots.|Figures|
-|`investigate\_myc\_sting\_mechanism.py`|Standalone exploratory analysis with the original (unrestricted) regulon; retained for transparency. Its unrestricted-regulon value is the one shown in Fig. 7a as the set-aside comparison.|Set-aside value of Fig. 7|
+| Module | Purpose | Manuscript link |
+|---|---|---|
+| `myc_tf_activity_decoupler.py` | Base ULM transcription-factor-activity routine (decoupleR-style) over a CollecTRI-derived MYC regulon. Intended to be driven by the clean-regulon wrapper rather than run directly. | provides the activity routine for Fig. 7 |
+| `fix_myc_tf_clean_regulon.py` | Restricts the MYC regulon to proliferation/metabolism targets disjoint from the functional readout gene sets (ISG, MHC-I, STING), removing the readout-gene overlap. | Figure |
+| `fix_myc_tf_clean_regulon_wrapper.py` | Executable wrapper that runs the activity routine with the restricted regulon and writes the `_clean` outputs. Entry point for the reported analysis. | runs the Fig. 7 analysis |
+| `fix_myc_tf_proliferation_confound.py` | Relates the cleaned MYC activity score to deconvolved tumour-cell abundance within Desert spots. | Figures |
+| `investigate_myc_sting_mechanism.py` | Standalone exploratory analysis with the original (unrestricted) regulon; retained for transparency. Its unrestricted-regulon value is the one shown in Fig. 7a as the set-aside comparison. | Set-aside value of Fig. 7 |
 
-### Stage 8 - Bulk (`src/08\_bulk/`)
+### Stage 7 — Bulk (`src/08_bulk/`)
 
-|Module|Purpose|Manuscript link|
-|-|-|-|
-|`bulk\_validation.py`|Self-contained entry point. Scores METABRIC/TCGA basal-like samples by a Barrier-Silencing index and assesses AUC, leave-one-out CV and Cox survival. The bulk Barrier component uses an extended ECM signature (see Supplementary Table S1).|Bulk recoverability and survival|
+| Module | Purpose | Manuscript link |
+|---|---|---|
+| `bulk_validation.py` | Self-contained entry point. Scores METABRIC/TCGA basal-like samples by a Barrier-Silencing index and assesses AUC, leave-one-out CV and Cox survival. The bulk Barrier component uses an extended ECM signature (see Supplementary Table S1). | Bulk recoverability and survival |
 
 ### Post-hoc fixes (`src/fixes/`)
 
 Self-contained scripts applied after the primary run to refine specific outputs.
 
-|Module|Refines|
-|-|-|
-|`fix\_validation\_celltype\_normalization.py`|Proportion normalisation of validation abundances (validation CAF contrast).|
-|`fix\_patient\_level\_validation.py`|Patient-level validation CAF.|
-|`fix\_survival\_fdr.py`|FDR correction of survival contrasts.|
-|`fix\_b1\_auc\_loocv.py`|Leave-one-out cross-validated AUC.|
-|`fix\_b2\_gene\_dropout\_correct.py`|Sparse-matrix-corrected gene-dropout simulation.|
+| Module | Refines |
+|---|---|
+| `fix_validation_celltype_normalization.py` | Proportion normalisation of validation abundances (validation CAF contrast). |
+| `fix_patient_level_validation.py` | Patient-level validation CAF. |
+| `fix_survival_fdr.py` | FDR correction of survival contrasts. |
+| `fix_b1_auc_loocv.py` | Leave-one-out cross-validated AUC. |
+| `fix_b2_gene_dropout_correct.py` | Sparse-matrix-corrected gene-dropout simulation. |
 
 ### Figures (`figures/`)
 
-|Module|Produces|
-|-|-|
-|`publication\_figures\_v10\_main.py`|Prospective Main Figure panels.|
-|`publication\_figures\_v10\_supp.py`|Prospective Supplementary Figure panels.|
+| Module | Produces |
+|---|---|
+| `publication_figures_v10_main.py` | Main Figure panels. |
+| `publication_figures_v10_supp.py` | Supplementary Figure panels. |
 
 Fig. 1 is a schematic prepared in BioRender and is not generated by code.
+
+### Archived (`deprecated/`)
+
+Retained for completeness but not part of the reported pipeline; not imported by any active module.
+
+| Module | Note |
+|---|---|
+| `geodesic_benchmark.py`, `weighted_geodesic.py` | Geodesic-distance exploration not used in the final analysis. |
+| `spatial_analysis_v2_additions.py` | Geodesic-support extension to the spatial-analysis module; superseded. |
 
 ### Archived (`deprecated/`)
 
@@ -299,16 +310,15 @@ Retained for completeness but not part of the reported pipeline; not imported by
 |`geodesic\_benchmark.py`, `weighted\_geodesic.py`|Geodesic-distance exploration not used in the final analysis.|
 |`spatial\_analysis\_v2\_additions.py`|Geodesic-support extension to the spatial-analysis module; superseded.|
 
-\---
+---
 
 ## 7\. Notes on signatures and reproducibility
 
-* The MYC analysis is reported from the restricted-regulon scripts (`fix\_myc\_tf\_clean\_\*`), run with decoupler 2.1.4 in the `tnbc\_spatial` environment; see Stage 7 above.
+* **Phenotype colour palette.** The publication figures (`publication_figures_v10_*.py`) use the Okabe-Ito colorblind-safe palette. Intermediate outputs produced by the analytic modules use the internal palette stored in `config.py`. All panels in the manuscript use Okabe-Ito.
+* The MYC analysis is reported from the restricted-regulon scripts (`fix_myc_tf_clean_*`), run with decoupler 2.1.4 in the `tnbc_spatial` environment; see Stage 6 above.
 * Cell2Location (v0.1.5) abundances are estimates rather than direct counts; the three classifier-independent CAF estimators do not depend on deconvolution and provide a check against that dependence.
-
-\---
+---
 
 ## 8\. License
 
 Released under the MIT License (see `LICENSE`). Third-party datasets retain their original licenses and terms of use.
-
