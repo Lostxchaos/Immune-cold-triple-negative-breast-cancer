@@ -139,20 +139,20 @@ The directory numbering follows the data flow: each stage consumes the AnnData o
 Stages 2 and 6-MYC run in the `tnbc\_spatial` environment; all other stages run in `spatial\_tnbc\_a` (see §2). Switch environments where indicated.
 
 ```bash
-# 0. Preprocessing and QC  ->  adata_preprocessed.h5ad (29,946 genes)
+# 1. Preprocessing and QC  ->  adata_preprocessed.h5ad (29,946 genes)
 #    >>> environment: spatial_tnbc_a  (and all stages below unless noted)
 python src/01_preprocessing/preprocessing.py
 python src/01_preprocessing/reclassify_validation.py
 
-# 1. Cell2Location deconvolution (run once; GPU recommended; reads step 0 output)
+# 2. Cell2Location deconvolution (run once; GPU recommended; reads step 0 output)
 #    >>> environment: tnbc_spatial
 python src/02_deconvolution/deconvolution.py
 
-# 2. Phenotype classification (five niches)
+# 3. Phenotype classification (five niches)
 #    >>> environment: spatial_tnbc_a
 python src/03_classification/phenotype_classifier.py
 
-# 3. CAF barrier: seven convergent estimators
+# 4. CAF barrier: seven convergent estimators
 python src/04_caf_barrier/mechanism_validation.py
 python src/04_caf_barrier/mechanism_validation_additions.py
 python src/04_caf_barrier/patient_level_analysis.py
@@ -160,7 +160,7 @@ python src/04_caf_barrier/marker_gene_scoring.py
 python src/04_caf_barrier/orthogonal_validation.py
 python src/04_caf_barrier/spatial_analysis_v2.py
 
-# 4. Robustness
+# 5. Robustness
 python src/05_robustness/sensitivity_analysis.py
 python src/05_robustness/sensitivity_analysis_additions.py
 python src/05_robustness/robustness_stress_tests.py
@@ -168,27 +168,27 @@ python src/05_robustness/spatial_coherence_analysis.py
 python src/05_robustness/comprehensive_celltype_analysis.py
 python src/05_robustness/ambiguity_tradeoff.py
 
-# 5. Checkpoint landscape, chemotaxis, cross-cohort validation
+# 6. Checkpoint landscape, chemotaxis, cross-cohort validation
 python src/06_checkpoint_chemokine/validation.py
 python src/06_checkpoint_chemokine/checkpoint_landscape.py
 
-# 6. MYC inference under confound control (see §7 for the regulon note)
+# 7. MYC inference under confound control (see §7 for the regulon note)
 #    >>> environment: tnbc_spatial
 python src/07_myc_inference/fix_myc_tf_clean_regulon_wrapper.py
 python src/07_myc_inference/fix_myc_tf_proliferation_confound.py
 
-# 7. Bulk recoverability + survival
+# 8. Bulk recoverability + survival
 #    >>> environment: spatial_tnbc_a
 python src/08_bulk/bulk_validation.py
 
-# 8. Post-hoc corrections applied after the primary run (§8)
+# 9. Post-hoc corrections applied after the primary run (§8)
 python src/fixes/fix_validation_celltype_normalization.py
 python src/fixes/fix_survival_fdr.py
 python src/fixes/fix_patient_level_validation.py
 python src/fixes/fix_b1_auc_loocv.py
 python src/fixes/fix_b2_gene_dropout_correct.py
 
-# 9. Figures
+# 10. Figures
 python figures/publication_figures_v10_main.py
 python figures/publication_figures_v10_supp.py
 ```
